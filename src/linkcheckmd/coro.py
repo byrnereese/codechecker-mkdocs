@@ -24,17 +24,11 @@ TIMEOUT = 10
 
 
 async def check_urls(
-    path: Path,
-    regex: str,
-    ext: str,
+    urls,
     hdr: dict[str, str] = None,
-    method: str = "get",
-    recurse: bool = False,
+    method: str = "get"
 ) -> list[tuple[str, str, T.Any]]:
-
-    glob = re.compile(regex)
-
-    tasks = [check_url(fn, glob, ext, hdr, method=method) for fn in files.get(path, ext, recurse)]
+    tasks = [check_url(u, hdr, method=method) for u in urls]
 
     warnings.simplefilter("ignore")
 
@@ -50,41 +44,38 @@ async def check_urls(
 
 
 async def check_url(
-    fn: Path, glob, ext: str, hdr: dict[str, str] = None, *, method: str = "get"
+    url, hdr: dict[str, str] = None, *, method: str = "get"
 ) -> list[tuple[str, str, T.Any]]:
 
-    urls = glob.findall(fn.read_text(errors="ignore"))
-    logging.debug(fn.name, " ".join(urls))
     bad: list[tuple[str, str, T.Any]] = []
 
     timeout = aiohttp.ClientTimeout(total=TIMEOUT)
-    rel_path = os.path.relpath(os.path.abspath(str(fn)), start=CWD)
+    rel_path = os.path.relpath(os.path.abspath(str(url['fn'])), start=CWD)
 
-    for url in urls:
-        if ext == ".md":
-            url = url[1:-1]
-        try:
-            # anti-crawling behavior doesn't like .head() method--.get() is slower but avoids lots of false positives
-            async with aiohttp.ClientSession(headers=hdr, timeout=timeout) as session:
-                if method == "get":
-                    async with session.get(url, allow_redirects=True) as response:
-                        code = response.status
-                elif method == "head":
-                    async with session.head(url, allow_redirects=True) as response:
-                        code = response.status
-                else:
-                    raise ValueError(f"Unknown retreive method {method}")
-        except OKE:
-            continue
-        except EXC as e:
-            bad.append((str(fn), url, e))  # e, not str(e)
-            print(f"ERROR: '{rel_path}' '{url}' '{e}'")
-            continue
+    try:
+        # anti-crawling behavior doesn't like .head() method--.get() is slower but avoids lots of false positives
+        async with aiohttp.ClientSession(headers=hdr, timeout=timeout) as session:
+            if method == "get":
+                async with session.get(url['url'], allow_redirects=True) as response:
+                    code = response.status
+                    if code != 200: bad.append( [ url['fn'], url['url'], code ] )
+            elif method == "head":
+                async with session.head(url['url'], allow_redirects=True) as response:
+                    code = response.status
+                    if code != 200: bad.append( [ url['fn'], url['url'], code ] )
+            else:
+                raise ValueError(f"Unknown retreive method {method}")
+#    except OKE:
+#        continue
+    except EXC as e:
+        bad.append( [ url['fn'], url['url'], e ] )  # e, not str(e)
+#        print(f"ERROR: '{rel_path}' '{url['url']}' '{e}'")
+#        continue
 
-        if code != 200:
-            bad.append((str(fn), url, code))
-            print(f"ERROR: '{rel_path}' '{url}' {code}")
-        else:
-            logging.info(f"OK: {url:80s}")
+#    if code != 200:
+#        bad.append( [ url['fn'], url['url'], code ] )
+#        print(f"ERROR: '{rel_path}' '{url}' {code}")
+#    else:
+#        logging.info(f"OK: {url['url']:80s}")
 
     return bad
