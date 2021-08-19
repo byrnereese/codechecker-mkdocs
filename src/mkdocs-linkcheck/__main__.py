@@ -1,9 +1,8 @@
 """
-check links in Markdown files (as used for Static site generation)
+Check links in Mkdocs markdown files (as used for static site generation)
 
-linkcheckMarkdown ~/myHugosite/content/posts github.com
-
-linkcheckMarkdown ~/myJekyllsite/_posts
+% mkdocs-linkcheck ~/myHugoSite/content/posts github.com
+% mkdocs-linkcheck ~/myMkdocsSite/docs
 """
 
 import argparse
@@ -14,8 +13,8 @@ from .base import check_links
 
 
 def main():
-    p = argparse.ArgumentParser(description="check links in markdown sites")
-    p.add_argument("path", help="path to Markdown files")
+    p = argparse.ArgumentParser(description="Check links in markdown files common to mkdocs-generated websites")
+    p.add_argument("path", help="Path to markdown files")
     p.add_argument(
         "domain",
         help="check only links to this domain (say github.com without https etc.)",

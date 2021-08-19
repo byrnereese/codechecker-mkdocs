@@ -1,36 +1,34 @@
-# Linkchecker for Markdown-based static generated sites
+# Link Checker for Mkdocs-based static generated sites
 
-![Actions Status](https://github.com/scivision/linkchecker-markdown/workflows/ci/badge.svg)
-[![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/scivision/linkchecker-markdown.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/scivision/linkchecker-markdown/context:python)
-[![pypi versions](https://img.shields.io/pypi/pyversions/linkcheckmd.svg)](https://pypi.python.org/pypi/linkcheckmd)
-[![PyPi Download stats](http://pepy.tech/badge/linkcheckmd)](http://pepy.tech/project/linkcheckmd)
+This project was designed to help validate links associated with markdown-based, staticly generated website -- especially those published via [Mkdocs](https://www.mkdocs.org/). It is a fork of [linkcheckmd](https://github.com/scivision/linkchecker-markdown), and offers many enhancements over its predecessor. This project has the following features:
 
-Blazing-fast (10000 Markdown files per second) Python asyncio / [aiohttp](https://docs.aiohttp.org/)
-based simple check of links in Markdown .md files only.
-This tool is very helpful for large Markdown-based Jekyll and Hugo sites as
-well as Markdown-based [MkDocs](https://www.mkdocs.org/) documentation projects.
-It is very fast and simple--it's what we use to check https://www.scivision.dev
+* Scan and validate links for over 10,000 markdown files per second
+* Check local (relative) and remote links
+* Recurse through an entire documentation tree
+* Check remote links using a synchronous or asynchronous process
+* Exclude links from being checked
+* Output useful summary reports to help you track down and fix broken links
+
+*While development focused on testing mkdocs-generated sites, this project should in theory work with any markdown-based website generator.*
 
 ## Install
 
-for latest release:
+For latest release:
 
 ```sh
-python -m pip install linkcheckmd
+% python -m pip install mkdocs-linkcheck
 ```
 
-or for latest development version.
+Or, for latest development version.
 
 ```sh
-git clone https://github.com/scivision/linkchecker-markdown
-
-pip install -e linkchecker-markdown
+% git clone https://github.com/byrnereese/linkchecker-mkdocs
+% pip install -e linkchecker-mkdocs
 ```
 
 ## Usage
 
-The static site generator does NOT have to be running for these tests.
-This program looks at the Markdown .md files directly.
+The static site generator does NOT have to be running for these tests. This program looks at the Markdown .md files directly.
 
 If any local or remote links are determined to be missing, the following happens:
 
@@ -41,17 +39,13 @@ The bad links are printed to stdout since the normal operation of this program i
 Due to the fast, concurrent checking and numerous pages checked, there may be diagnostics printed to stderr.
 That way library error messages can be kept separate from the missing page locations printed on stdout.
 
-
-The examples assume webpage Markdown files have top-level directory ~/web.
-*If using the linkchecker on an MkDocs documentation project, Markdown files
-are typically found in a `~/docs` directory.*
+The examples assume webpage Markdown files have top-level directory ~/docs.
 
 ### Python code
 
 ```python
-import linkcheckmd as lc
-
-lc.check_links("~/web")
+import mkdocs-linkcheck as lc
+lc.check_links("~/docs")
 ```
 
 ### Command-line
@@ -59,62 +53,42 @@ lc.check_links("~/web")
 This program may be invoked by either:
 
 ```sh
-linkcheckMarkdown
+mkdocs-linkcheck
 ```
 
 or
 
 ```sh
-python -m linkcheckmd
+python -m mkdocs-linkcheck
 ```
 
-* Jekyll
+#### Command link arguments
 
-    ```sh
-    python -m linkcheckmd ~/web/_posts
-    ```
+Usage
 
-* Hugo
+> mkdocs-linkcheck [-h] [-ext EXT] [-m {get,head}] [-v] [--sync] [--exclude EXCLUDE] [-local] [-r] path [domain]
 
-    ```sh
-    python -m linkcheckmd ~/web/content
-    ```
+Positional arguments:
 
-* MkDocs Documentation
+* `path` - path to Markdown files
+* `domain` - check only links to this domain (say github.com without https etc.)
 
-    ```sh
-    python -m linkcheckmd ~/docs
-    ```
+Optional arguments:
 
-The `-v` `--verbose` options prints the URLs as they are checked.
-Observe that URLs from different markdown files are interleaved, showing the asynchronous nature of this program.
-
-### Benchmark
-
-For benchmarking and reference, we include a synchronous Requests-based method.
-For a website with 100+ pages, compare times of:
+* `-h`, `--help` - show a help message and exit
+* `-ext <str>` - file extension to scan
+* `-m {get,head}`, `--method {get,head}` - The HTTP method to use when testing remote links. The "head" method is faster but gives false positives. The "get" method is reliable but slower
+* `--sync` - enable synchronous checking of remote links, or do not use asyncio
+* `--exclude str` - a pattern for a file or path to exclude from being checked; use this argument multiple times to exclude multiple files. Regular expressions are ok. 
+* `-local` - check local files only
+* `-r`, `--recurse` - recurse through all directories under path
+* `-v` or `--verbose` -prints the URLs as they are checked
 
 ### Git precommit
 
-See
-[./examples/pre-commit](./examples/pre-commit)
-script for a
-[Git hook pre-commit](https://www.scivision.dev/git-markdown-pre-commit-linkcheck)
-Python script.
+See [./examples/pre-commit](./examples/pre-commit) script for a [Git hook pre-commit](https://www.scivision.dev/git-markdown-pre-commit-linkcheck) Python script.
 
 ### Tox and CI
 
-This program can also be used as a check for bad links during continuous integration
-testing or when using [`tox`](https://tox.readthedocs.io/).
+This program can also be used as a check for bad links during continuous integration testing or when using [`tox`](https://tox.readthedocs.io/).
 
-## Alternatives
-
-Strict anti-leeching methods can cause false positives with this and other link checking programs.
-
-Alternative solutions include:
-
-* asyncio-based web browser interface like Arsenic
-* Go-based [htmltest](https://github.com/wjdp/htmltest).
-* [GitHub Action](https://github.com/marketplace/actions/markdown-link-check) for checking links in Markdown files.
-* Netlify link-check [plugin](https://github.com/munter/netlify-plugin-checklinks#readme)
-* LinkChecker.py: too many false positives/negatives, very slow and only works with HTML.
