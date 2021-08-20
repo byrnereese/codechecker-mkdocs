@@ -28,7 +28,7 @@ def main():
     p.add_argument(
         "-m","--method",
         choices=["get", "head"],
-        help="head is faster but gives false positives. Get is reliable but slower",
+        help="The HTTP method to use when checking external links. The HEAD method is faster but gives false positives. Get is reliable but slower",
         default="get")
     p.add_argument(
         "-v", "--verbose",
@@ -41,10 +41,6 @@ def main():
         "--exclude",
         help="a pattern for a file or path to exclude",
         action="append")
-    p.add_argument(
-        "--method",
-        help="The HTTP method to use when checking external links",
-        default="get")
     p.add_argument(
         "-l","--local",
         help="only check local files",
