@@ -131,7 +131,10 @@ def extract_links( path: Path, ext: str, recurse: bool, domain: str, exclude: []
         md_urls = md_glob.findall(fn.read_text(errors="ignore"))
         links = mu_urls + md_urls
         for link in links:
-            if exclude and exclude_link( link, exclude ):
+            if link.startswith('mailto:'):
+                # Ignore mail links, do nothing for now.
+                continue
+            elif exclude and exclude_link( link, exclude ):
                 SUMMARY['skipped'] += 1
                 if fn not in SUMMARY['problems']: SUMMARY['problems'][fn] = [] 
                 SUMMARY['problems'][fn].append( [ link, 'ignored' ] )
@@ -146,7 +149,8 @@ def is_remote_url( url, domain, ext ) -> bool:
     if domain:
         pat = "https?://" + domain + r"[=a-zA-Z0-9\_\/\?\&\%\+\#\.\-]*"
     else:
-        pat = r"https?://[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[=a-zA-Z0-9\_\/\?\&\%\+\#\.\-]+"
+        pat = r"https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)"
+        #pat = r"https?://[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[=a-zA-Z0-9\_\/\?\&\%\+\#\.\-]+"
     glob = re.compile(pat)
     return glob.search( url )
     
