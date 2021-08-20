@@ -131,7 +131,7 @@ def extract_links( path: Path, ext: str, recurse: bool, domain: str, exclude: []
         md_urls = md_glob.findall(fn.read_text(errors="ignore"))
         links = mu_urls + md_urls
         for link in links:
-            if exclude_link( link, exclude ):
+            if exclude and exclude_link( link, exclude ):
                 SUMMARY['skipped'] += 1
                 if fn not in SUMMARY['problems']: SUMMARY['problems'][fn] = [] 
                 SUMMARY['problems'][fn].append( [ link, 'ignored' ] )
