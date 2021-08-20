@@ -1,1 +1,1 @@
-include src/linkcheckmd/tests/badlink.md
+include src/mkdocs_linkcheck/tests/badlink.md
