@@ -165,12 +165,13 @@ def check_local(url: str, ext: str, fn: str, path: str ): #-> T.Iterable[tuple[s
         SUMMARY['empty'] += 1
         if fn not in SUMMARY['problems']: SUMMARY['problems'][fn] = [] 
         SUMMARY['problems'][fn].append( [ url, 'empty' ] )
-        #yield fn.name, url
+        logging.info(f"Empty link in: {fn}")
     elif img_glob.search(str(full_path)):
         # File is an image
         if not Path(full_path).is_file():
             SUMMARY['broken'] += 1
             if fn not in SUMMARY['problems']: SUMMARY['problems'][fn] = [] 
+            logging.info(f"Broken image: {url}")
             SUMMARY['problems'][fn].append( [ url, 'dead' ] )
     else:
         fn1 = str(full_path).rstrip("/") + ext
@@ -178,6 +179,7 @@ def check_local(url: str, ext: str, fn: str, path: str ): #-> T.Iterable[tuple[s
         if not Path(fn1).is_file() and not Path(fn2).is_file():
             SUMMARY['broken'] += 1
             if fn not in SUMMARY['problems']: SUMMARY['problems'][fn] = [] 
+            logging.info(f"Broken link: {url}")
             SUMMARY['problems'][fn].append( [ url, 'dead' ] )
  
 def check_remotes(

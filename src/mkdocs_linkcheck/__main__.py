@@ -11,7 +11,6 @@ import time
 
 from .base import check_links
 
-
 def main():
     p = argparse.ArgumentParser(description="Check links in markdown files common to mkdocs-generated websites")
     p.add_argument(
