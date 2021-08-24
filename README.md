@@ -1,51 +1,54 @@
 # Link Checker for Mkdocs-based static generated sites
 
-This project was designed to help validate links associated with markdown-based, staticly generated website -- especially those published via [Mkdocs](https://www.mkdocs.org/). It is a fork of [linkcheckmd](https://github.com/scivision/linkchecker-markdown), and offers many enhancements over its predecessor. This project has the following features:
+Project status: in active development. Not recommended for production use. 
 
-* Scan and validate links for over 10,000 markdown files per second
-* Check local (relative) and remote links
-* Recurse through an entire documentation tree
-* Check remote links using a synchronous or asynchronous process
-* Exclude links from being checked
-* Output useful summary reports to help you track down and fix broken links
-
-*While development focused on testing mkdocs-generated sites, this project should in theory work with any markdown-based website generator.*
+This project was originally conceived at RingCentral to help automate the validation and testing of the code samples contained within its [mkdocs-powered Developer Guide](https://github.com/ringcentral/ringcentral-api-docs/).
 
 ## Install
 
 For latest release:
 
 ```sh
-% python -m pip install mkdocs-linkcheck
+% python -m pip install mkdocs-codecheck
 ```
 
 Or, for latest development version.
 
 ```sh
-% git clone https://github.com/byrnereese/linkchecker-mkdocs
-% pip install -e linkchecker-mkdocs
+% git clone https://github.com/byrnereese/codechecker-mkdocs
+% pip install -e codechecker-mkdocs
 ```
 
 ## Usage
 
-The static site generator does NOT have to be running for these tests. This program looks at the Markdown .md files directly.
+### How to structure your documentation
 
-If any local or remote links are determined to be missing, the following happens:
+A core design requirement for this system to work is that the code samples you wish to embed in your documentation have been fully aabstracted out of the documentation itself. That means that each individual code sample be placed in a dedicated file, and then included or inserted into your documentation when your docs are built. 
 
-* the file containing the bad link and the link is printed to "stdout"
-* the program will exit with code 22 instead of 0 after all files are checked
+In mkdocs, for example, the [mdx_include](https://github.com/neurobin/mdx_include) plugin can be used to insert a code sample located in a separate file. Let's take a look:
 
-The bad links are printed to stdout since the normal operation of this program is to check for errors.
-Due to the fast, concurrent checking and numerous pages checked, there may be diagnostics printed to stderr.
-That way library error messages can be kept separate from the missing page locations printed on stdout.
+```markdown
+This is my documentation for my developer platform. Here is a simple "Hello World"
+script you can use to get started:
 
-The examples assume webpage Markdown files have top-level directory ~/docs.
+    ```python
+	{!> code-samples/hello-world.py ln:10- !}
+	```
+```
+
+### How to structure a code sample
+
+
+
+### Ignoring files
+
+Using the same syntax as a `.gitignore` file, you can create a `.codetest-ignore` file to exclude certain files from being tested. This is helpful if you need to exclude node modules, python modules and other libraries from being tested. 
 
 ### Python code
 
 ```python
-import mkdocs-linkcheck as lc
-lc.check_links("~/docs")
+import mkdocs-codecheck as cc
+cc.process_code("~/docs", recurse=True)
 ```
 
 ### Command-line
@@ -53,42 +56,33 @@ lc.check_links("~/docs")
 This program may be invoked by either:
 
 ```sh
-mkdocs-linkcheck
+mkdocs-codecheck
 ```
 
 or
 
 ```sh
-python -m mkdocs-linkcheck
+python -m mkdocs-codecheck
 ```
 
 #### Command link arguments
 
 Usage
 
-> mkdocs-linkcheck [-h] [-ext EXT] [-m {get,head}] [-v] [--sync] [--exclude EXCLUDE] [-local] [-r] path [domain]
+> mkdocs-codecheck [-h] [-v] [--dotenv PATH_TO_DOTENV] [--exclude EXCLUDE] [--recurse] path
 
 Positional arguments:
 
-* `path` - path to Markdown files
-* `domain` - check only links to this domain (say github.com without https etc.)
+* `path` - root path to code samples
 
 Optional arguments:
 
 * `-h`, `--help` - show a help message and exit
-* `-ext <str>` - file extension to scan
-* `-m {get,head}`, `--method {get,head}` - The HTTP method to use when testing remote links. The "head" method is faster but gives false positives. The "get" method is reliable but slower
-* `--sync` - enable synchronous checking of remote links, or do not use asyncio
 * `--exclude str` - a pattern for a file or path to exclude from being checked; use this argument multiple times to exclude multiple files. Regular expressions are ok. 
-* `-local` - check local files only
+* `--dotenv str` - a fully qualified path to a .env file containing environment variables to source prior to executing code samples
 * `-r`, `--recurse` - recurse through all directories under path
 * `-v` or `--verbose` -prints the URLs as they are checked
 
-### Git precommit
+Example
 
-See [./examples/pre-commit](./examples/pre-commit) script for a [Git hook pre-commit](https://www.scivision.dev/git-markdown-pre-commit-linkcheck) Python script.
-
-### Tox and CI
-
-This program can also be used as a check for bad links during continuous integration testing or when using [`tox`](https://tox.readthedocs.io/).
-
+> mkdocs-codecheck ~/github/
