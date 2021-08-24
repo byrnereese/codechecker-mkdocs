@@ -27,18 +27,32 @@ A core design requirement for this system to work is that the code samples you w
 
 In mkdocs, for example, the [mdx_include](https://github.com/neurobin/mdx_include) plugin can be used to insert a code sample located in a separate file. Let's take a look:
 
-```markdown
-This is my documentation for my developer platform. Here is a simple "Hello World"
-script you can use to get started:
+    This is my documentation for my developer platform. Here is a simple 
+	"Hello World" script you can use to get started:
 
     ```python
-	{!> code-samples/hello-world.py ln:10- !}
-	```
-```
+    {!> code-samples/hello-world.py ln:10- !}
+    ```
+
+The above code inserts the contents of the `hello-world.py` file into the current markdown file. It inserts the contents of the file starting on line #10. This is done because the first 10 lines contain boilerplate content we don't typically display in our documentation. 
 
 ### How to structure a code sample
 
+Each individual code sample must:
 
+* Be contained in its own dedicated file
+* Be a fully self-contained, and executable file
+* Not require input from the user
+* Catch all errors, and return a system exit code greater than 0 to signal to the framework that an error occurred
+* Return a system exit code of 0 upon successful completion of the code sample
+
+It is recommended:
+
+* Environment variables be used for passing input into a code sample
+* Boilerpate content be added to the top of your code samples to guide others in how to use them
+
+Examples:
+* [quick-start.py at RingCentral](https://github.com/ringcentral/ringcentral-api-docs/blob/autotest-code-samples/code-samples/messaging/quick-start.py)
 
 ### Ignoring files
 
