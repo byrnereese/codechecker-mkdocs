@@ -74,7 +74,7 @@ class PythonCodeHandler( CodeHandler ):
             result = subprocess.run(full_path,timeout=10,check=True)
         except (py_compile.PyCompileError) as e:
             raise SyntaxError(e)
-        except subprocess.PermissionError as e:
+        except PermissionError as e:
             raise PermissionsError(e)
         except subprocess.TimeoutExpired as e:
             raise TimedOutError(e)

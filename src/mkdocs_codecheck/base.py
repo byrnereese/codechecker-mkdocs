@@ -15,10 +15,14 @@ from . import dotignore
 USER_AGENT = "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:64.0) Gecko/20100101 Firefox/64.0"
 SUMMARY = {
     'total': 0,
-    'syntax': 0,
-    'errors': 0,
-    'skipped': 0,
+    'passed': 0,
     'checked': 0,
+    'checked_syntax': 0,
+    'checked_runtime': 0,
+    'errors': 0,
+    'errors_syntax': 0,
+    'errors_runtime': 0,
+    'skipped': 0,
     'problems': {},
     'failure': False
     }
@@ -32,21 +36,18 @@ STATUS_LABELS = {
 }
 
 def print_summary():
-    total   = SUMMARY['total']
-    errors  = SUMMARY['errors']
-    skipped = SUMMARY['skipped']
-    checked = SUMMARY['checked']
-    syntax  = SUMMARY['syntax']
-    print(f'             Total: {total}')
-    print(f'      Files tested: {checked}')
-    print(f'  Files NOT tested: {skipped}')
-    print(f'     Syntax errors: {syntax}')
-    print(f'   Run-time errors: {errors}')
+    print(f'             Total: {SUMMARY["total"]}')
+    print(f'     Syntax checks: {SUMMARY["checked_syntax"]}')
+    print(f'     Syntax errors: {SUMMARY["errors_syntax"]}')
+    print(f'      Files passed: {SUMMARY["passed"]}')
+    print(f'   Run-time errors: {SUMMARY["errors_runtime"]}')
+    print(f'  Files NOT tested: {SUMMARY["skipped"]}')
 
-    for p in SUMMARY['problems']:
-        p_msg = SUMMARY['problems'][p]['msg']
-        p_type = SUMMARY['problems'][p]['type']
-        print(f'{p}')
+    for file_path in SUMMARY['problems']:
+        problem = SUMMARY['problems'][file_path]
+        p_msg = problem['msg']
+        p_type = problem['type']
+        print(f'{file_path}')
         print(f'[{STATUS_LABELS[p_type]}] {p_msg}')
 
 def ignore_file( fn ) -> bool:
@@ -58,6 +59,10 @@ def ignore_file( fn ) -> bool:
         return True
     logging.debug(f'Ignore {fn.name}? No.')
     return False
+
+def append_problem(fn, msg, t):
+    #logging.info( fn )
+    SUMMARY['problems'][fn["fn"]] = { 'msg': msg, 'type': t }    
 
 def process_code(
         path: Path,
@@ -88,32 +93,36 @@ def process_code(
                 logging.debug(f'  {SUMMARY["total"]}. Skipping language for {handler.language}')
                 continue
             else:
-                logging.debug(f'  {SUMMARY["total"]}. Checking syntax for {full_path}') 
+                logging.debug(f'  {SUMMARY["total"]}. Checking syntax for {full_path}')  
+                SUMMARY['checked_syntax'] += 1
                 handler.check_syntax()
                 if not syntax_only: 
                     logging.debug(f'  {SUMMARY["total"]}. Executing {full_path}')
+                    SUMMARY['checked_runtime'] += 1
                     handler.check_runtime()
+                    SUMMARY['passed'] += 1
         except handlers.NoCodeHandler as e:
             logging.debug(f'  {SUMMARY["total"]}. No handler found for: {f["fn"].name}')
             SUMMARY['skipped'] += 1
         except handlers.SyntaxError as e:
             logging.debug(f'  {SUMMARY["total"]}. There is a syntax problem with the file.')
-            SUMMARY['problems'][full_path] = { 'msg': f'Syntax error: {e}', 'type': 'syntax' }
-            SUMMARY['syntax'] += 1
+            append_problem( f, f'Syntax error: {e}', 'syntax' )
+            SUMMARY['errors_syntax'] += 1
         except handlers.PermissionsError as e:
             logging.debug(f'  {SUMMARY["total"]}. The file is not executable.')
-            #SUMMARY['problems'][full_path] = { 'msg': f'Not executable.', 'type': 'permission' }
-            SUMMARY['skipped'] += 1
+            append_problem( f, "Not executable.", "permission" )
+            SUMMARY['errors'] += 1
+            SUMMARY['errors_runtime'] += 1
         except handlers.TimedOutError as e:
             logging.debug(f'  {SUMMARY["total"]}. Process took too long to run.')
-            SUMMARY['problems'][full_path] = { 'msg': f'Timed out.', 'type': 'error' }
+            append_problem( f, 'Timed out.', 'error' )
             SUMMARY['errors'] += 1
+            SUMMARY['errors_runtime'] += 1
         except handlers.RuntimeError as e:
             logging.debug(f'  {SUMMARY["total"]}. The script ({full_path}) exited with an error status code')
-            SUMMARY['problems'][full_path] = { 'msg': f'Error executing script: {e}', 'type': 'error' }
+            append_problem( f, f'Error executing script: {e}', 'error' )
             SUMMARY['errors'] += 1
-        finally:
-            SUMMARY['checked'] += 1
+            SUMMARY['errors_runtime'] += 1
             
     if SUMMARY['errors'] > 0: bad = True
     print_summary()
