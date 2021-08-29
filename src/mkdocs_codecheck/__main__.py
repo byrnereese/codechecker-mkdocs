@@ -33,6 +33,9 @@ def main():
         help="Check syntax of code only. Do not execute the script.",
         action="store_true")
     p.add_argument(
+        "--languages",
+        help="The languages to process. A comma delimitted list of any of java, python, php, ruby, javascript, and c#.")
+    p.add_argument(
         "--dotenv",
         help="The path to a .env file that contains environment variables to pull into the current execution context")
     P = p.parse_args()
@@ -45,11 +48,15 @@ def main():
         load_dotenv(dotenv_path=dotenv_path)
         
     tic = time.monotonic()
+    langs = P.languages
+    if langs != None:
+        langs = [x.strip() for x in langs.split(',')]
     bad = process_code(
         P.path,
         recurse=P.recurse,
         exclude=P.exclude,
-        syntax_only=P.syntax_only
+        syntax_only=P.syntax_only,
+        languages=langs
     )
 
     print(f"{time.monotonic() - tic:0.3} seconds to check code samples")
