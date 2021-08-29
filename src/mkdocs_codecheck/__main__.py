@@ -29,6 +29,10 @@ def main():
         help="recurse directories under path",
         action="store_true")
     p.add_argument(
+        "--syntax-only",
+        help="Check syntax of code only. Do not execute the script.",
+        action="store_true")
+    p.add_argument(
         "--dotenv",
         help="The path to a .env file that contains environment variables to pull into the current execution context")
     P = p.parse_args()
@@ -44,7 +48,8 @@ def main():
     bad = process_code(
         P.path,
         recurse=P.recurse,
-        exclude=P.exclude
+        exclude=P.exclude,
+        syntax_only=P.syntax_only
     )
 
     print(f"{time.monotonic() - tic:0.3} seconds to check code samples")

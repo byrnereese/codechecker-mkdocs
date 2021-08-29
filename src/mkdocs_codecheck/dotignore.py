@@ -32,7 +32,7 @@ class dotignore:
         for rule in self.rules:
             rule = str(rule)
             logging.debug(f'Checking {fn} against {rule}')
-            if re.search( rf"^{rule}$", fn, re.IGNORECASE ):
+            if re.search( rf"{rule}", str(filename), re.IGNORECASE ):
                 logging.debug(f'Ignoring {fn}')
                 return True
         return False

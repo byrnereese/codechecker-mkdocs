@@ -6,15 +6,25 @@ import os
 def find_handler( f ):# -> CodeHandler:
     logging.debug(f'Finding handler for {f}')
     if PythonCodeHandler.can_handle( f ):
-        logging.debug('Python file found')
+        logging.info('Python file found')
         return PythonCodeHandler( f )
+    elif PHPCodeHandler.can_handle( f ):
+        logging.info('PHP file found')
+        return PHPCodeHandler( f )
     raise NoCodeHandler(f'Could not find handler for {f}')
 
-class CodeHandlerError(Exception):
+class CodeHandlerException(Exception):
     """Base class for other exceptions"""
     pass
-
-class NoCodeHandler(CodeHandlerError):
+class NoCodeHandler(CodeHandlerException):
+    pass
+class SyntaxError(CodeHandlerException):
+    pass
+class RuntimeError(CodeHandlerException):
+    pass
+class PermissionsError(CodeHandlerException):
+    pass
+class TimedOutError(CodeHandlerException):
     pass
 
 class CodeHandler:
@@ -46,15 +56,56 @@ class PythonCodeHandler( CodeHandler ):
         # TODO - capture STDOUT and save full stacktrace to SUMMARY
         super().check_syntax()
         full_path = self.code_file['fn']
-        logging.debug(f'Checking python syntax: {full_path}')
-        return py_compile.compile( full_path, doraise=True )
+        logging.info(f'Checking python syntax: {full_path}')
+        try:
+            result = py_compile.compile( full_path, doraise=True )
+        except (py_compile.PyCompileError) as e:
+            raise SyntaxError(e)
+        else:
+            return result
     def check_runtime(self):
         # TODO - capture STDOUT and do not output to terminal
         super().check_runtime()
         full_path = self.code_file['fn']
-        logging.debug(f'Processing Python file: {full_path}')
-        #client_id = os.environ.get('RC_CLIENT_ID')
-        #logging.info(f'Environment var RC_CLIENT_ID={client_id}')
-        return subprocess.run(full_path,timeout=10,check=True)
-    
+        logging.info(f'Processing Python file: {full_path}')
+        try:
+            result = subprocess.run(full_path,timeout=10,check=True)
+        except (py_compile.PyCompileError) as e:
+            raise SyntaxError(e)
+        except subprocess.PermissionError as e:
+            raise PermissionsError(e)
+        except subprocess.TimeoutExpired as e:
+            raise TimedOutError(e)
+        except subprocess.CalledProcessError as e:
+            raise RuntimeError(e)
+        else:
+            return result
+
+class PHPCodeHandler( CodeHandler ):
+    def __init__(self, f):
+        super().__init__( 'python', f )
+        self.data = []
+    def can_handle( f ):
+        if f["fn"].name.endswith('.php'):
+            return True
+        return False
+    def check_syntax(self):
+        # TODO - capture STDOUT and save full stacktrace to SUMMARY
+        super().check_syntax()
+        full_path = self.code_file['fn']
+        logging.info(f'Checking PHP syntax: {full_path}')
+        result = subprocess.call(['php','-l',full_path])
+        if result != 0:
+            raise SyntaxError(f'Syntax error in: {full_path}')
+        return result
+    def check_runtime(self):
+        # TODO - capture STDOUT and do not output to terminal
+        super().check_runtime()
+        full_path = self.code_file['fn']
+        logging.info(f'Processing PHP file: {full_path}')
+        result = subprocess.call(['php',full_path])
+        if result != 0:
+            raise RuntimeError(r'Error running command: php {full_path}')
+        return result
+
 

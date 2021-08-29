@@ -60,9 +60,10 @@ def ignore_file( fn ) -> bool:
     return False
 
 def process_code(
-    path: Path,
-    recurse: bool = False,
-    exclude: [str] = None
+        path: Path,
+        recurse: bool = False,
+        exclude: [str] = None,
+        syntax_only: bool = False
 ) -> bool:
     bad = False
     code_files = find_code_samples( path, recurse=recurse, exclude=exclude )
@@ -76,27 +77,28 @@ def process_code(
         try:
             handler = handlers.find_handler( f )
             handler.check_syntax()
-            handler.check_runtime()
+            if not syntax_only:
+                handler.check_runtime()
         except handlers.NoCodeHandler as e:
             logging.debug(f'No handler found for: {f["fn"].name}')
             SUMMARY['skipped'] += 1
-        except (SyntaxError, py_compile.PyCompileError) as e:
+        except handlers.SyntaxError as e:
             logging.debug(f'There is a syntax problem with the file.')
             SUMMARY['problems'][full_path] = { 'msg': f'Syntax error: {e}', 'type': 'syntax' }
             SUMMARY['syntax'] += 1
-        except PermissionError as e:
+        except handlers.PermissionsError as e:
             logging.debug(f'The file is not executable.')
             #SUMMARY['problems'][full_path] = { 'msg': f'Not executable.', 'type': 'permission' }
             SUMMARY['skipped'] += 1
-        except subprocess.TimeoutExpired as e:
+        except handlers.TimedoutError as e:
             logging.debug(f'Process took too long to run.')
             SUMMARY['problems'][full_path] = { 'msg': f'Timed out.', 'type': 'error' }
             SUMMARY['errors'] += 1
-        except subprocess.CalledProcessError as e:
+        except handlers.RuntimeError as e:
             logging.debug(f'The script ({full_path}) exited with an error status code')
             SUMMARY['problems'][full_path] = { 'msg': f'Error executing script: {e}', 'type': 'error' }
             SUMMARY['errors'] += 1
-        else:
+        finally:
             SUMMARY['checked'] += 1
             
     if SUMMARY['errors'] > 0: bad = True
