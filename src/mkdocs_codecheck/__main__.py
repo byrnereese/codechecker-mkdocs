@@ -59,7 +59,7 @@ def main():
         languages=langs
     )
 
-    print(f"{time.monotonic() - tic:0.3} seconds to check code samples")
+    print(f"\n{time.monotonic() - tic:0.3} seconds to check code samples")
 
     if bad:
         # using 22 following cURL

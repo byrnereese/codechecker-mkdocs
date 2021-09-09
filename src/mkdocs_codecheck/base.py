@@ -11,6 +11,16 @@ import subprocess
 from . import handlers
 from . import dotignore
 
+class bcolors:
+    HEADER    = '\033[95m'
+    OKBLUE    = '\033[94m'
+    OKGREEN   = '\033[92m'
+    WARNING   = '\033[93m'
+    FAIL      = '\033[91m'
+    BOLD      = '\033[1m'
+    UNDERLINE = '\033[4m'
+    ENDC      = '\033[0m'
+
 # http://www.useragentstring.com
 USER_AGENT = "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:64.0) Gecko/20100101 Firefox/64.0"
 SUMMARY = {
@@ -28,37 +38,45 @@ SUMMARY = {
     }
 
 STATUS_LABELS = {
-    'passed': '✓',
+    'passed':     '✓',
     'permission': '✖',
-    'syntax': '✖',
-    'skipped': '/',
-    'error': '⚠'
+    'syntax':     '✖',
+    'skipped':    '/',
+    'error':      '⚠'
 }
 
-def print_summary():
-    print(f'             Total: {SUMMARY["total"]}')
+def print_summary( root_path ):
+    print(f'SUMMARY')
+    print(f'       Total files: {SUMMARY["total"]}')
     print(f'     Syntax checks: {SUMMARY["checked_syntax"]}')
-    print(f'     Syntax errors: {SUMMARY["errors_syntax"]}')
-    print(f'      Files passed: {SUMMARY["passed"]}')
-    print(f'   Run-time errors: {SUMMARY["errors_runtime"]}')
     print(f'  Files NOT tested: {SUMMARY["skipped"]}')
+    print(f'      Files passed: {SUMMARY["passed"]}')
+    print(f'ERRORS')
+    print(f'     Syntax errors: {SUMMARY["errors_syntax"]}')
+    print(f'   Run-time errors: {SUMMARY["errors_runtime"]}')
 
     for file_path in SUMMARY['problems']:
         problem = SUMMARY['problems'][file_path]
+        rel_file_path = relative_path( root_path, file_path )
         p_msg = problem['msg']
         p_type = problem['type']
-        print(f'{file_path}')
+        print(f'\n{bcolors.OKBLUE}{rel_file_path}{bcolors.ENDC}')
         print(f'[{STATUS_LABELS[p_type]}] {p_msg}')
 
-def ignore_file( fn ) -> bool:
-    # TODO - switch to an .ignore-file file mechanism
-    e = r'^(__init__.py|.*\~|\..*)$'
-    regex = re.compile(e)
-    if regex.search( fn.name ):
-        logging.debug(f'Ignore {fn.name}? Yes.')
-        return True
-    logging.debug(f'Ignore {fn.name}? No.')
-    return False
+def relative_path( root_path, file_path ) -> str:
+    cur_dir_name = str( root_path ).rpartition('/')[2]
+    rfp = './' + cur_dir_name + str(file_path).replace( str(root_path), '' )
+    return rfp
+        
+#def ignore_file( fn ) -> bool:
+#    # TODO - switch to an .ignore-file file mechanism
+#    e = r'^(__init__.py|.*\~|\..*)$'
+#    regex = re.compile(e)
+#    if regex.search( fn.name ):
+#        logging.debug(f'Ignore {fn.name}? Yes.')
+#        return True
+#    logging.debug(f'Ignore {fn.name}? No.')
+#    return False
 
 def append_problem(fn, msg, t):
     #logging.info( fn )
@@ -73,16 +91,19 @@ def process_code(
 ) -> bool:
     bad = False
     code_files = find_code_samples( path, recurse=recurse, exclude=exclude )
+    root_path = None
 
     logging.debug(f'Processing languages: {languages}')
     for f in code_files:
         full_path = f["fn"].name
+        root_path = f["path"]
         SUMMARY['total'] += 1
         logging.debug(f'{SUMMARY["total"]}. Processing {full_path}')
-        ignore = ignore_file( f["fn"] )
-        logging.debug(f'  {SUMMARY["total"]}. Exclude? {ignore}')
-        if ignore:
-            continue
+        # This should not be necessary as the dotignore file should be used instead
+        #ignore = ignore_file( f["fn"] )
+        #logging.debug(f'  {SUMMARY["total"]}. Exclude? {ignore}')
+        #if ignore:
+        #    continue
 
         try:
             handler = handlers.find_handler( f )
@@ -99,8 +120,19 @@ def process_code(
                 if not syntax_only: 
                     logging.debug(f'  {SUMMARY["total"]}. Executing {full_path}')
                     SUMMARY['checked_runtime'] += 1
-                    handler.check_runtime()
-                    SUMMARY['passed'] += 1
+                    result = handler.check_runtime()
+                    if result.returncode > 0:
+                        #logging.info( f'handler.check_runtime() FAILED for {full_path}' )
+                        #logging.info( f'   stderr: {result.stderr}' )
+                        #logging.info( f'   stdout: {result.stdout}' )
+                        #if re.search( r'429 Client Error', result.stderr ):
+                        #    logging.info( f'Rate limit error possibly detected.' )
+                        append_problem( f, result.stderr, "error" )
+                        SUMMARY['errors'] += 1
+                        SUMMARY['errors_runtime'] += 1
+                    else:
+                        #logging.info( f'handler.check_runtime() succeeded. stdout: {result.stdout}' )
+                        SUMMARY['passed'] += 1
         except handlers.NoCodeHandler as e:
             logging.debug(f'  {SUMMARY["total"]}. No handler found for: {f["fn"].name}')
             SUMMARY['skipped'] += 1
@@ -125,7 +157,7 @@ def process_code(
             SUMMARY['errors_runtime'] += 1
             
     if SUMMARY['errors'] > 0: bad = True
-    print_summary()
+    print_summary( root_path )
     return bad
 
 def exclude_file( link, exclude ) -> bool:
