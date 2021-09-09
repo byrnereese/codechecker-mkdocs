@@ -16,10 +16,44 @@ Or, for latest development version.
 
 ```sh
 % git clone https://github.com/byrnereese/codechecker-mkdocs
-% pip install -e codechecker-mkdocs
+% cd codechecker-mkdocs
+% python setup.py install 
 ```
 
 ## Usage
+
+### Setting up your environment
+
+Each programming language you will be running tests for will likely have their own unique requirements for executing these tests. For example, to test Java, the `javac` and/or `java` programs will need to be in your path. The following are instructions on how you setup your testing environment for each supported language:
+
+**Python**
+
+Setup a virtual environment for your python code samples. Navigate to your mkdocs-powered repository, and run the following command:
+
+```bash
+% pip install venv
+% python -m venv .
+```
+
+Then activate your virtual environment:
+
+```bash
+% source ./bin/activate
+```
+
+Finally, consult the documentation associated with the code samples you will be testing, and install any prerequisites or python libraries into this virtual environment that your code samples rely on. 
+
+**PHP**
+
+**Java**
+
+**Ruby**
+
+Not yet supported.
+
+**Javascript**
+
+Not yet supported. 
 
 ### How to structure your documentation
 
@@ -58,19 +92,19 @@ Examples:
 
 Using the same syntax as a `.gitignore` file, you can create a `.codetest-ignore` file to exclude certain files from being tested. This is helpful if you need to exclude node modules, python modules and other libraries from being tested. 
 
-### Python code
+### Running mkdocs-codecheck from within a python script
 
 ```python
 import mkdocs-codecheck as cc
 cc.process_code("~/docs", recurse=True)
 ```
 
-### Command-line
+### Running mkdocs-codecheck from the command-line
 
 This program may be invoked by either:
 
 ```sh
-mkdocs-codecheck
+mkdocs-codecheck --recurse ~/docs
 ```
 
 or
@@ -92,11 +126,13 @@ Positional arguments:
 Optional arguments:
 
 * `-h`, `--help` - show a help message and exit
-* `--exclude str` - a pattern for a file or path to exclude from being checked; use this argument multiple times to exclude multiple files. Regular expressions are ok. 
-* `--dotenv str` - a fully qualified path to a .env file containing environment variables to source prior to executing code samples
+* `--exclude <str>` - a pattern for a file or path to exclude from being checked; use this argument multiple times to exclude multiple files. Regular expressions are ok. 
+* `--dotenv <str>` - a fully qualified path to a .env file containing environment variables to source prior to executing code samples
+* `--languages <str>` - a comma-delimitted list of languages you will test, e.g. `java`, `php`, `python`, et al.
+* `--syntax-only` - do not attempt to run code samples, simply check them for syntax errors only
 * `-r`, `--recurse` - recurse through all directories under path
 * `-v` or `--verbose` -prints the URLs as they are checked
 
 Example
 
-> mkdocs-codecheck ~/github/
+> mkdocs-codecheck --languages python,php --dotenv ~/.env ~/github/
