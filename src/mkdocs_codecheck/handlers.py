@@ -3,6 +3,22 @@ import py_compile
 import subprocess
 import os
 
+def is_handler_enabled( language ) -> bool:
+    if language == 'python':
+        return PythonCodeHandler.is_enabled()
+    elif language == 'java':
+        return JavaCodeHandler.is_enabled()
+    elif language == 'php':
+        return PHPCodeHandler.is_enabled()
+    elif language == 'ruby':
+        return False
+    elif language == 'c#':
+        return False
+    elif language == 'javascript':
+        return False
+    else:
+        raise UnknownLanguage(f'Unknown language {language}: cannot process.')
+
 def find_handler( f ):# -> CodeHandler:
     logging.debug(f'Finding handler for {f}')
     if PythonCodeHandler.can_handle( f ):
@@ -21,15 +37,12 @@ def find_handler( f ):# -> CodeHandler:
 class CodeHandlerException(Exception):
     """Base class for other exceptions"""
     pass
-    #result = None
-    #def __init__(self, r):
-    #    self.result = r
 class NoCodeHandler(CodeHandlerException):
+    pass
+class UnknownLanguage(CodeHandlerException):
     pass
 class SyntaxError(CodeHandlerException):
     pass
-    #def __init__(self, result):
-    #    super().__init__(result)
 class RuntimeError(CodeHandlerException):
     pass
 class PermissionsError(CodeHandlerException):
@@ -47,6 +60,9 @@ class CodeHandler:
     def can_handle( f ) -> bool:
         #logging.info(f'Don\'t know how to detect files for {self.language}')
         pass
+    def is_enabled() -> bool:
+        #logging.info(f'Don\'t know how to detect files for {self.language}')
+        pass
     def check_syntax( self ):
         #logging.info(f'Don\'t know how to check syntax for {self.language}')
         pass
@@ -62,6 +78,8 @@ class PythonCodeHandler( CodeHandler ):
         if f["fn"].name.endswith('.py'):
             return True
         return False
+    def is_enabled():
+        return True
     def check_syntax(self):
         # TODO - capture STDOUT and save full stacktrace to SUMMARY
         super().check_syntax()
@@ -105,6 +123,12 @@ class PHPCodeHandler( CodeHandler ):
         if f["fn"].name.endswith('.php'):
             return True
         return False
+    def is_enabled():
+        try:
+            result = subprocess.run(['php','-v'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            return True
+        except:
+            return False
     def check_syntax(self):
         # TODO - capture STDOUT and save full stacktrace to SUMMARY
         super().check_syntax()
@@ -133,6 +157,13 @@ class JavaCodeHandler( CodeHandler ):
         if f["fn"].name.endswith('.java'):
             return True
         return False
+    def is_enabled():
+        try:
+            result1 = subprocess.run(['java','--version'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            result2 = subprocess.run(['javac','--version'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            return True
+        except:
+            return False
     def check_syntax(self):
         # TODO - capture STDOUT and save full stacktrace to SUMMARY
         super().check_syntax()

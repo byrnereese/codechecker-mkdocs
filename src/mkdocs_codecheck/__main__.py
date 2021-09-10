@@ -11,6 +11,7 @@ from dotenv import load_dotenv
 from pathlib import Path
 
 from .base import process_code
+from . import handlers
 
 def main():
     p = argparse.ArgumentParser(description="Check code files within a directory or tree.")
@@ -48,9 +49,18 @@ def main():
         load_dotenv(dotenv_path=dotenv_path)
         
     tic = time.monotonic()
-    langs = P.languages
-    if langs != None:
-        langs = [x.strip() for x in langs.split(',')]
+    langs = []
+    if P.languages != None:
+        for l in P.languages.split(','):
+            l = l.strip()
+            try:
+                if not handlers.is_handler_enabled( l ):
+                    print(f'Error: environment not setup properly for {l}, bailing.')
+                    raise SystemExit(22)
+            except handlers.UnknownLanguage as e:
+                print(f'Error: unknown language "{l}"')
+                raise SystemExit(22)
+            langs.append(l)
     bad = process_code(
         P.path,
         recurse=P.recurse,
