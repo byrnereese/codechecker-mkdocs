@@ -43,17 +43,16 @@ Then activate your virtual environment:
 
 Finally, consult the documentation associated with the code samples you will be testing, and install any prerequisites or python libraries into this virtual environment that your code samples rely on. 
 
-**PHP**
+### Currently supported languages
 
-**Java**
-
-**Ruby**
-
-Not yet supported.
-
-**Javascript**
-
-Not yet supported. 
+| Language | Syntax checking | Code execution |
+|-|-|-|
+| C# | No | No |
+| Java | Yes | No |
+| JavaScript | Yes | Experimental |
+| PHP | Yes | Yes |
+| Python | Yes | Yes |
+| Ruby | Yes | Experimental |
 
 ### How to structure your documentation
 
@@ -68,7 +67,7 @@ In mkdocs, for example, the [mdx_include](https://github.com/neurobin/mdx_includ
     {!> code-samples/hello-world.py ln:10- !}
     ```
 
-The above code inserts the contents of the `hello-world.py` file into the current markdown file. It inserts the contents of the file starting on line #10. This is done because the first 10 lines contain boilerplate content we don't typically display in our documentation. 
+The above code inserts the contents of the `hello-world.py` file into the current markdown file. It inserts the contents of the file starting on line #10. Starting on line #10 is not always necessary, but in case you include a header section in your code denoting the author, copyright, license, etc, you may choose to omit this content when rendering the code sample inline with your documentation.
 
 ### How to structure a code sample
 
