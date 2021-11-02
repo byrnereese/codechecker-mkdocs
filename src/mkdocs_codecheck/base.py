@@ -46,14 +46,17 @@ STATUS_LABELS = {
 }
 
 def print_summary( root_path ):
+    SUMMARY["passed_syntax"] = SUMMARY["checked_syntax"] - SUMMARY["errors_syntax"]
     print(f'SUMMARY')
-    print(f'       Total files: {SUMMARY["total"]}')
-    print(f'     Syntax checks: {SUMMARY["checked_syntax"]}')
-    print(f'  Files NOT tested: {SUMMARY["skipped"]}')
-    print(f'      Files passed: {SUMMARY["passed"]}')
-    print(f'ERRORS')
-    print(f'     Syntax errors: {SUMMARY["errors_syntax"]}')
-    print(f'   Run-time errors: {SUMMARY["errors_runtime"]}')
+    print(f'  Total files: {SUMMARY["total"]}')
+    print(f'SYNTAX CHECKS')
+    print(f'    Files: {SUMMARY["checked_syntax"]}')
+    print(f'   Passed: {SUMMARY["passed_syntax"]}')
+    print(f' Failures: {SUMMARY["errors_syntax"]}')
+    print(f'RUNTIME TESTS')
+    print(f'    Files: {SUMMARY["checked_runtime"]}')
+    print(f'   Passed: {SUMMARY["passed"]}')
+    print(f' Failures: {SUMMARY["errors_runtime"]}')
 
     for file_path in SUMMARY['problems']:
         problem = SUMMARY['problems'][file_path]
@@ -116,6 +119,7 @@ def process_code(
             else:
                 logging.debug(f'  {SUMMARY["total"]}. Checking syntax for {full_path}')  
                 SUMMARY['checked_syntax'] += 1
+                logging.info(f'Checking {handler.language} syntax: {full_path}')
                 handler.check_syntax()
                 if not syntax_only: 
                     logging.debug(f'  {SUMMARY["total"]}. Executing {full_path}')

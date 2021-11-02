@@ -4,17 +4,17 @@ import subprocess
 import os
 
 def is_handler_enabled( language ) -> bool:
-    if language == 'python':
+    if language == 'python' or language == "py":
         return PythonCodeHandler.is_enabled()
     elif language == 'java':
         return JavaCodeHandler.is_enabled()
     elif language == 'php':
         return PHPCodeHandler.is_enabled()
-    elif language == 'ruby':
-        return False
+    elif language == 'ruby' or language == "rb":
+        return RubyCodeHandler.is_enabled()
+    elif language == 'javascript' or language == 'js':
+        return JavaScriptCodeHandler.is_enabled()
     elif language == 'c#':
-        return False
-    elif language == 'javascript':
         return False
     else:
         raise UnknownLanguage(f'Unknown language {language}: cannot process.')
@@ -30,6 +30,12 @@ def find_handler( f ):# -> CodeHandler:
     elif JavaCodeHandler.can_handle( f ):
         #logging.info('Java file found')
         return JavaCodeHandler( f )
+    elif JavaScriptCodeHandler.can_handle( f ):
+        #logging.info('JavaScript file found')
+        return JavaScriptCodeHandler( f )
+    elif RubyCodeHandler.can_handle( f ):
+        #logging.info('Ruby file found')
+        return RubyCodeHandler( f )
     else:
         #logging.info(f"Could not find handler for {f['fn']}")
         raise NoCodeHandler(f'Could not find handler for {f}')
@@ -84,7 +90,6 @@ class PythonCodeHandler( CodeHandler ):
         # TODO - capture STDOUT and save full stacktrace to SUMMARY
         super().check_syntax()
         full_path = self.code_file['fn']
-        #logging.info(f'Checking python syntax: {full_path}')
         try:
             result = py_compile.compile( full_path, doraise=True )
         except (py_compile.PyCompileError) as e:
@@ -133,7 +138,6 @@ class PHPCodeHandler( CodeHandler ):
         # TODO - capture STDOUT and save full stacktrace to SUMMARY
         super().check_syntax()
         full_path = self.code_file['fn']
-        #logging.info(f'Checking PHP syntax: {full_path}')
         result = subprocess.call(['php','-l',full_path])
         if result != 0:
             raise SyntaxError(f'Syntax error in: {full_path}', result)
@@ -148,6 +152,69 @@ class PHPCodeHandler( CodeHandler ):
             raise RuntimeError(r'Error running command: php {full_path}')
         return result
 
+class JavaScriptCodeHandler( CodeHandler ):
+    def __init__(self, f):
+        super().__init__( 'js', f )
+        self.data = []
+    def can_handle( f ):
+        if f["fn"].name.endswith('.js') or f["fn"].name.endswith('.json'):
+            return True
+        return False
+    def is_enabled():
+        try:
+            result = subprocess.run(['node','-v'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            return True
+        except:
+            return False
+    def check_syntax(self):
+        # TODO - capture STDOUT and save full stacktrace to SUMMARY
+        super().check_syntax()
+        full_path = self.code_file['fn']
+        result = subprocess.call(['node','--check',full_path])
+        if result != 0:
+            raise SyntaxError(f'Syntax error in: {full_path}', result)
+        return result
+    def check_runtime(self):
+        # TODO - capture STDOUT and do not output to terminal
+        super().check_runtime()
+        full_path = self.code_file['fn']
+        #logging.info(f'Processing JavaScript file: {full_path}')
+        result = subprocess.call(['node',full_path])
+        if result != 0:
+            raise RuntimeError(r'Error running command: node {full_path}')
+        return result
+
+class RubyCodeHandler( CodeHandler ):
+    def __init__(self, f):
+        super().__init__( 'ruby', f )
+        self.data = []
+    def can_handle( f ):
+        if f["fn"].name.endswith('.rb'):
+            return True
+        return False
+    def is_enabled():
+        try:
+            result = subprocess.run(['ruby','-v'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            return True
+        except:
+            return False
+    def check_syntax(self):
+        # TODO - capture STDOUT and save full stacktrace to SUMMARY
+        super().check_syntax()
+        full_path = self.code_file['fn']
+        result = subprocess.call(['ruby','-c',full_path])
+        if result != 0:
+            raise SyntaxError(f'Syntax error in: {full_path}', result)
+        return result
+    def check_runtime(self):
+        # TODO - capture STDOUT and do not output to terminal
+        super().check_runtime()
+        full_path = self.code_file['fn']
+        #logging.info(f'Processing JavaScript file: {full_path}')
+        result = subprocess.call(['ruby',full_path])
+        if result != 0:
+            raise RuntimeError(r'Error running command: ruby {full_path}')
+        return result
 
 class JavaCodeHandler( CodeHandler ):
     def __init__(self, f):
@@ -168,7 +235,6 @@ class JavaCodeHandler( CodeHandler ):
         # TODO - capture STDOUT and save full stacktrace to SUMMARY
         super().check_syntax()
         full_path = self.code_file['fn']
-        #logging.info(f'Checking java syntax: {full_path}')
         result = subprocess.call(['javac','-l',full_path])
         if result != 0:
             raise SyntaxError(f'Syntax error in: {full_path}', result)
