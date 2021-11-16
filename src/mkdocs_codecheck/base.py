@@ -117,7 +117,7 @@ def process_code(
                 logging.debug(f'  {SUMMARY["total"]}. Skipping language for {handler.language}')
                 continue
             else:
-                logging.debug(f'  {SUMMARY["total"]}. Checking syntax for {full_path}')  
+                logging.info(f'  {SUMMARY["total"]}. Checking syntax for {full_path}')  
                 SUMMARY['checked_syntax'] += 1
                 logging.info(f'Checking {handler.language} syntax: {full_path}')
                 handler.check_syntax()

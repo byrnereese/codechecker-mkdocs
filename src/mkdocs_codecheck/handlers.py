@@ -3,6 +3,11 @@ import py_compile
 import subprocess
 import os
 
+def rchop(s, suffix):
+    if suffix and s.endswith(suffix):
+        return s[:-len(suffix)]
+    return s
+
 def is_handler_enabled( language ) -> bool:
     if language == 'python' or language == "py":
         return PythonCodeHandler.is_enabled()
@@ -14,8 +19,8 @@ def is_handler_enabled( language ) -> bool:
         return RubyCodeHandler.is_enabled()
     elif language == 'javascript' or language == 'js':
         return JavaScriptCodeHandler.is_enabled()
-    elif language == 'c#':
-        return False
+    elif language == 'c#' or language == 'csharp':
+        return CSharpCodeHandler.is_enabled()
     else:
         raise UnknownLanguage(f'Unknown language {language}: cannot process.')
 
@@ -36,6 +41,9 @@ def find_handler( f ):# -> CodeHandler:
     elif RubyCodeHandler.can_handle( f ):
         #logging.info('Ruby file found')
         return RubyCodeHandler( f )
+    elif CSharpCodeHandler.can_handle( f ):
+        #logging.info('Ruby file found')
+        return CSharpCodeHandler( f )
     else:
         #logging.info(f"Could not find handler for {f['fn']}")
         raise NoCodeHandler(f'Could not find handler for {f}')
@@ -235,7 +243,7 @@ class JavaCodeHandler( CodeHandler ):
         # TODO - capture STDOUT and save full stacktrace to SUMMARY
         super().check_syntax()
         full_path = self.code_file['fn']
-        result = subprocess.call(['javac','-l',full_path])
+        result = subprocess.call(['javac',full_path])
         if result != 0:
             raise SyntaxError(f'Syntax error in: {full_path}', result)
         return result
@@ -245,4 +253,37 @@ class JavaCodeHandler( CodeHandler ):
         full_path = self.code_file['fn']
         #logging.info(f'Processing Java file: {full_path}')
         #return result
+
+class CSharpCodeHandler( CodeHandler ):
+    def __init__(self, f):
+        super().__init__( 'csharp', f )
+        self.data = []
+    def can_handle( f ):
+        if f["fn"].name == 'Program.cs':
+            return True
+        return False
+    def is_enabled():
+        try:
+            result1 = subprocess.run(['dotnet','--info'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            return True
+        except:
+            return False
+    def check_syntax(self):
+        # TODO - capture STDOUT and save full stacktrace to SUMMARY
+        super().check_syntax()
+        full_path = self.code_file['fn']
+        prj_dir = rchop(str(full_path), 'Program.cs')
+        result = subprocess.call(['dotnet','build',prj_dir])
+        if result != 0:
+            raise SyntaxError(f'Syntax error in: {full_path}', result)
+        return result
+    def check_runtime(self):
+        # TODO - capture STDOUT and do not output to terminal
+        super().check_runtime()
+        full_path = self.code_file['fn']
+        prj_dir = rchop(str(full_path), 'Program.cs')
+        result = subprocess.call(['dotnet','run',prj_dir])
+        if result != 0:
+            raise RuntimeError(f'Error running project: {prj_dir}', result)
+        return result
 
