@@ -9,17 +9,17 @@ def rchop(s, suffix):
     return s
 
 def is_handler_enabled( language ) -> bool:
-    if language == 'python' or language == "py":
+    if language == 'python':
         return PythonCodeHandler.is_enabled()
     elif language == 'java':
         return JavaCodeHandler.is_enabled()
     elif language == 'php':
         return PHPCodeHandler.is_enabled()
-    elif language == 'ruby' or language == "rb":
+    elif language == 'ruby':
         return RubyCodeHandler.is_enabled()
-    elif language == 'javascript' or language == 'js':
+    elif language == 'javascript':
         return JavaScriptCodeHandler.is_enabled()
-    elif language == 'c#' or language == 'csharp':
+    elif language == 'c#':
         return CSharpCodeHandler.is_enabled()
     else:
         raise UnknownLanguage(f'Unknown language {language}: cannot process.')
@@ -162,7 +162,7 @@ class PHPCodeHandler( CodeHandler ):
 
 class JavaScriptCodeHandler( CodeHandler ):
     def __init__(self, f):
-        super().__init__( 'js', f )
+        super().__init__( 'javascript', f )
         self.data = []
     def can_handle( f ):
         if f["fn"].name.endswith('.js') or f["fn"].name.endswith('.json'):
@@ -178,18 +178,14 @@ class JavaScriptCodeHandler( CodeHandler ):
         # TODO - capture STDOUT and save full stacktrace to SUMMARY
         super().check_syntax()
         full_path = self.code_file['fn']
-        result = subprocess.call(['node','--check',full_path])
-        if result != 0:
-            raise SyntaxError(f'Syntax error in: {full_path}', result)
+        result = subprocess.run(['node','--check',full_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         return result
     def check_runtime(self):
         # TODO - capture STDOUT and do not output to terminal
         super().check_runtime()
         full_path = self.code_file['fn']
         #logging.info(f'Processing JavaScript file: {full_path}')
-        result = subprocess.call(['node',full_path])
-        if result != 0:
-            raise RuntimeError(r'Error running command: node {full_path}')
+        result = subprocess.run(['node',full_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         return result
 
 class RubyCodeHandler( CodeHandler ):
